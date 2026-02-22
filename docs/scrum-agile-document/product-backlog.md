@@ -68,20 +68,12 @@
 
 ---
 
-### US-1.4: Monorepo Project Setup
+### US-1.4: Separate Repos Project Setup
 **Priority:** P0 | **Story Points:** 8
 
 **As a** developer  
-**I want** organized monorepo structure  
+**I want** organized Separate Repos structure or frontend and backend have their folder
 **So that** frontend and backend code is maintainable
-
-**Acceptance Criteria:**
-- ✅ Turborepo or Nx configured
-- ✅ Structure: `/apps` (web, api, bot) and `/packages` (ui, database, types, ai)
-- ✅ Shared TypeScript configs
-- ✅ ESLint + Prettier working
-- ✅ Git hooks for pre-commit checks
-- ✅ README with setup instructions
 
 ---
 
