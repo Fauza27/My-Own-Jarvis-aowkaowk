@@ -8,26 +8,26 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
 
     # Database
-    DATABASE_URL: str
+    #DATABASE_URL: str
 
     # Redis
-    REDIS_URL: str
+    #REDIS_URL: str
 
     # JWT
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # OpenAI
-    OPENAI_API_KEY: str
+    #OPENAI_API_KEY: str
     
     # Telegram
-    TELEGRAM_BOT_TOKEN: str
+    #TELEGRAM_BOT_TOKEN: str
     
     # CORS
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000"]
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:3001"]
     
     class Config:
-        env_file = ".env"
+        env_file = "../.env"
         case_sensitive = True
 
 settings = Settings()
