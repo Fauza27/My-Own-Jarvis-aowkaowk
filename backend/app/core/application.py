@@ -43,9 +43,12 @@ def _register_middleware(app: FastAPI, settings):
     )
 
 def _register_exception_handlers(app: FastAPI):
+    from app.core.exceptions import UnauthorizedError
+    
     @app.exception_handler(AuthenticationError)
     @app.exception_handler(InvalidTokenError)
     @app.exception_handler(EmailNotConfirmedError)
+    @app.exception_handler(UnauthorizedError)
     async def authentication_error_handler(request: Request, exc: AppError):
         return JSONResponse(
             status_code=401,
@@ -101,7 +104,7 @@ def _register_routers(app: FastAPI):
         return {
             "status": "healthy",
             "app": settings.APP_NAME,
-            "version": settings.APP_VERSION,
+            "version": settings.VERSION,
             "environment": settings.APP_ENV,
         }
     

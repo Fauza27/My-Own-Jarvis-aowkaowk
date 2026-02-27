@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     SUPABASE_ANON_KEY: str
     SUPABASE_SERVICE_ROLE_KEY: str
 
+    SUPABASE_TEST_URL: str
+    SUPABASE_TEST_SERVICE_ROLE_KEY: str
+    SUPABASE_TEST_ANON_KEY: str
+
     # Redis
     #REDIS_URL: str
 
@@ -52,6 +56,16 @@ class Settings(BaseSettings):
     def password_reset_url(self) -> str:
         """URL halaman reset password di frontend"""
         return f"{self.FRONTEND_URL}/auth/reset-password"
+    
+    @property
+    def password_reset_redirect_url(self) -> str:
+        """Alias for password_reset_url for compatibility."""
+        return self.password_reset_url
+    
+    @property
+    def APP_ENV(self) -> str:
+        """Alias for ENVIRONMENT for compatibility."""
+        return self.ENVIRONMENT
     
 @lru_cache()
 def get_settings() -> Settings:

@@ -31,3 +31,7 @@ class NotFoundError(AppError):
 class ValidationError(AppError):
     """Raised when input data fails validation."""
     pass
+
+class UnauthorizedError(AppError):
+    """Raised when user is not authorized (401)."""
+    pass
