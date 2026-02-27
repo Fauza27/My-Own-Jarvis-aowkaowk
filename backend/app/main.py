@@ -1,29 +1,18 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from config import settings
+import sys
+from pathlib import Path
 
-app = FastAPI(
-    title="My-Jarvis-Gua API",
-    version="1.0.0",
-    description="J.A.R.V.I.S Project"
-)
+# Add parent directory (backend) to Python path
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.get("/")
-async def root():
-    return {"message": "Welcome to MY Jarvis Gua API"}
-
-@app.get("/health")
-async def health():
-    return {"status": "healthy"}
+import uvicorn
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        "app.core.application:create_app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        factory=True,
+        reload_dirs=[str(backend_dir / "app")],
+    )
