@@ -66,7 +66,7 @@ export function LoginForm() {
             text-sm text-red-700
             animate-in fade-in slide-in-from-top-1 duration-200"
         >
-          <AlertCircle className="w-4 h-4 t-0.5 shrink-0 text-red-500" />
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
           <div className="space-y-1">
             <p className="font-medium">Login Failed</p>
             <p className="text-red-600">{serverError}</p>
