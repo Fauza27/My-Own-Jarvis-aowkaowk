@@ -122,3 +122,17 @@ async def forgot_password(
         email=body.email,
         redirect_url=settings.password_reset_url,
     )
+
+@router.get(
+    "/google",
+    status_code=status.HTTP_200_OK,
+    summary="Get Google OAuth URL for sign in",
+)
+async def google_oauth(
+    service: AuthService = Depends(get_auth_service),
+):
+    settings = get_settings()
+    return service.get_oauth_url(
+        provider="google",
+        redirect_url=settings.auth_redirect_url,
+    )
