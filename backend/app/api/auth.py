@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, status
-from fastapi.responses import RedirectResponse
 from supabase import Client
 
 from app.core.config import get_settings
 from app.core.dependencies import CurrentUser, AccessToken
-from app.infrastructure.supabase_client import get_supabase_client
+from app.infrastructure.supabase_client import get_supabase_client, get_admin_supabase_client
 from app.repositories.auth_repository import AuthRepository
 from app.services.auth_service import AuthService
 from app.models.auth import (
@@ -14,15 +13,15 @@ from app.models.auth import (
     RefreshTokenRequest,
     TokenOut,
     MessageOut,
-    UserOut,
 )
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 def get_auth_service(
     supabase: Client = Depends(get_supabase_client),
+    admin_supabase: Client = Depends(get_admin_supabase_client),
 ) -> AuthService:
-    auth_repo = AuthRepository(supabase)
+    auth_repo = AuthRepository(client=supabase, admin_client=admin_supabase)
     return AuthService(auth_repo)
 
 @router.post(
@@ -62,9 +61,10 @@ async def login(
 )
 async def logout(
     _current_user: CurrentUser,
+    access_token: AccessToken,
     service: AuthService = Depends(get_auth_service),
 ):
-    return service.logout()
+    return service.logout(access_token=access_token)
 
 @router.post(
     "/refresh",
@@ -121,7 +121,7 @@ async def forgot_password(
     settings = get_settings()
     return service.request_password_reset(
         email=body.email,
-        redirect_url=settings.password_reset_url,
+        redirect_url=settings.password_reset_redirect_url,
     )
 
 @router.get(

@@ -29,9 +29,9 @@ class AuthService:
             )
         )
     
-    def logout(self) -> MessageOut:
+    def logout(self, access_token: str) -> MessageOut:
         """Logout user by revoking the access token."""
-        self._auth_repo.logout()
+        self._auth_repo.logout(access_token)
         return MessageOut(message="Logout successful.")
     
     def refresh_session(self, refresh_token: str) -> TokenOut:
