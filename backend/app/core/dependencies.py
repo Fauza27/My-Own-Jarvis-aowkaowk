@@ -4,11 +4,11 @@ import time
 import logging
 
 from fastapi import Depends, Header
-from supabase import Client
+from supabase import Client, AuthApiError
 
 from app.core.config import get_settings, Settings
 from app.core.exceptions import AuthenticationError, InvalidTokenError
-from app.infrastructure.supabase_client import get_supabase_client, get_admin_supabase_client
+from app.infrastructure.supabase_client import get_admin_supabase_client
 from app.models.auth import UserOut
 
 logger = logging.getLogger(__name__)
@@ -35,9 +35,22 @@ async def get_current_user(
         # Try to get user from Supabase first
         response = admin_supabase.auth.get_user(token)
         return response.user
-    except Exception as e:
+    except AuthApiError as auth_error:
+        error_msg = str(auth_error.message).lower()
+
+        if (
+            "invalid" in error_msg
+            or "expired" in error_msg
+            or "jwt" in error_msg
+            or "token" in error_msg
+        ):
+            raise InvalidTokenError("Invalid or expired token")
+
+        logger.error("Supabase auth API failed to validate token: %s", str(auth_error.message)[:100])
+        raise InvalidTokenError("Unable to validate token at this time")
+    except Exception as provider_error:
         # If get_user fails, verify JWT manually with SIGNATURE CHECK
-        logger.info(f"get_user failed, trying JWT verification: {str(e)[:100]}")
+        logger.info(f"get_user failed, trying JWT verification: {str(provider_error)[:100]}")
         
         try:
             settings = get_settings()
@@ -88,7 +101,7 @@ async def get_current_user(
             raise InvalidTokenError("Invalid token format")
         except Exception as jwt_error:
             logger.error(f"JWT verification failed: {str(jwt_error)[:100]}")
-            raise InvalidTokenError("Invalid or expired token") from e
+            raise InvalidTokenError("Invalid or expired token") from provider_error
     
 async def get_access_token(
     authorization: Annotated[str, Header()] = None,

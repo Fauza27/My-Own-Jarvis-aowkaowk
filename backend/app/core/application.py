@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from supabase import Client
 
 from app.core.config import get_settings
-from app.core.dependencies import get_supabase_client
+from app.infrastructure.supabase_client import get_supabase_client
 from app.core.exceptions import (
     AppError,
     AuthenticationError,
