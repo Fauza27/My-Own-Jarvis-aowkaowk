@@ -7,13 +7,21 @@ import { isTokenExpired } from "@/features/auth/utils";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { isAuthenticated, accessToken, expiresAt } = useAuthStore();
+  const { isAuthenticated, accessToken, expiresAt, hasHydrated } = useAuthStore();
 
   useEffect(() => {
-    if (!isAuthenticated || !accessToken || isTokenExpired(expiresAt)) {
-      router.push("/login");
+    if (!hasHydrated) {
+      return;
     }
-  }, [isAuthenticated, accessToken, expiresAt, router]);
+
+    if (!isAuthenticated || !accessToken || isTokenExpired(expiresAt)) {
+      router.replace("/login");
+    }
+  }, [hasHydrated, isAuthenticated, accessToken, expiresAt, router]);
+
+  if (!hasHydrated) {
+    return null;
+  }
 
   if (!isAuthenticated || !accessToken || isTokenExpired(expiresAt)) {
     return null;

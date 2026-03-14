@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/features/auth/store";
 import { Loader2, AlertCircle } from "lucide-react";
@@ -12,9 +12,46 @@ export default function AuthCallbackPage() {
   const searchParams = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [error, setError] = useState<string | null>(null);
+  const hasHandledCallbackRef = useRef(false);
 
   useEffect(() => {
     const handleCallback = async () => {
+      if (hasHandledCallbackRef.current) {
+        return;
+      }
+      hasHandledCallbackRef.current = true;
+
+      const runWithTimeout = async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+        return Promise.race([
+          promise,
+          new Promise<T>((_, reject) => {
+            setTimeout(() => reject(new Error(`${label} timeout`)), ms);
+          }),
+        ]);
+      };
+
+      const getJwtExpiry = (token: string): number | null => {
+        try {
+          const payloadSegment = token.split(".")[1];
+          if (!payloadSegment) {
+            return null;
+          }
+
+          const base64 = payloadSegment.replace(/-/g, "+").replace(/_/g, "/");
+          const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+          const payload = JSON.parse(window.atob(padded));
+
+          return typeof payload.exp === "number" ? payload.exp : null;
+        } catch {
+          return null;
+        }
+      };
+
+      const watchdog = setTimeout(() => {
+        setError("Authentication is taking too long. Please try again.");
+        setTimeout(() => router.replace("/login"), 2000);
+      }, 12000);
+
       try {
         // Check for errors in URL
         const errorParam = searchParams.get("error");
@@ -25,106 +62,134 @@ export default function AuthCallbackPage() {
 
         if (errorParam || hashError) {
           setError(errorDescription || hashErrorDescription || "Authentication failed");
-          setTimeout(() => router.push("/login"), 3000);
+          setTimeout(() => router.replace("/login"), 3000);
           return;
         }
 
         // Import Supabase client dynamically
         const { supabase } = await import("@/lib/supabase");
 
+        const getSessionFromHash = () => {
+          const accessToken = hashParams.get("access_token");
+          const refreshToken = hashParams.get("refresh_token");
+          const expiresAtRaw = hashParams.get("expires_at");
+          const expiresAt = expiresAtRaw ? Number(expiresAtRaw) : null;
+
+          if (!accessToken || !refreshToken) {
+            return null;
+          }
+
+          return {
+            access_token: accessToken,
+            refresh_token: refreshToken,
+            expires_at: Number.isFinite(expiresAt) ? expiresAt : null,
+          };
+        };
+
+        const verifyAndPersistSession = async (session: { access_token: string; refresh_token: string; expires_at?: number | null }) => {
+          const { access_token, refresh_token, expires_at } = session;
+          const userData = await runWithTimeout(verifyToken(access_token), 8000, "Token verification");
+          const resolvedExpiresAt = typeof expires_at === "number" ? expires_at : getJwtExpiry(access_token);
+
+          if (!resolvedExpiresAt) {
+            throw new Error("Session expiration is missing or invalid");
+          }
+
+          const user = {
+            id: userData.user_id,
+            email: userData.email,
+            created_at: new Date().toISOString(),
+            email_confirmed: true,
+          };
+
+          setAuth(access_token, refresh_token, resolvedExpiresAt, user);
+          router.replace("/dashboard");
+        };
+
+        const hashSession = getSessionFromHash();
+        if (hashSession) {
+          console.log("Handling implicit flow from URL hash tokens");
+
+          // Clean sensitive fragments first to avoid racing with router navigation
+          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+
+          void supabase.auth
+            .setSession({
+              access_token: hashSession.access_token,
+              refresh_token: hashSession.refresh_token,
+            })
+            .catch((setSessionError) => {
+              console.warn("Failed to sync Supabase session from hash:", setSessionError);
+            });
+
+          await verifyAndPersistSession(hashSession);
+          return;
+        }
+
         // Check if we have a code parameter (PKCE flow from OAuth)
         const code = searchParams.get("code");
-        
+
         if (code) {
           // PKCE flow - exchange code for session
           // code_verifier should be in localStorage (created when OAuth was initiated)
           console.log("Handling PKCE flow with code");
-          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(
-            window.location.search
-          );
+          const { data, error: exchangeError } = await runWithTimeout(supabase.auth.exchangeCodeForSession(code), 8000, "Code exchange");
 
           if (exchangeError) {
             console.error("Code exchange error:", exchangeError);
             setError(exchangeError.message || "Failed to complete authentication");
-            setTimeout(() => router.push("/login"), 3000);
+            setTimeout(() => router.replace("/login"), 3000);
             return;
           }
 
           if (!data.session) {
             setError("No session received after code exchange");
-            setTimeout(() => router.push("/login"), 3000);
+            setTimeout(() => router.replace("/login"), 3000);
             return;
           }
 
-          const { access_token, refresh_token, expires_at } = data.session;
-
-          // Verify token with backend
           try {
-            const userData = await verifyToken(access_token);
-            
-            const user = {
-              id: userData.user_id,
-              email: userData.email,
-              created_at: new Date().toISOString(),
-              email_confirmed: true,
-            };
-
-            // Store auth data
-            setAuth(access_token, refresh_token, expires_at || 0, user);
-            
-            // Redirect to dashboard
-            router.push("/dashboard");
+            await verifyAndPersistSession(data.session);
           } catch (verifyError) {
             console.error("Token verification failed:", verifyError);
             setError("Failed to verify authentication with server");
-            setTimeout(() => router.push("/login"), 3000);
+            setTimeout(() => router.replace("/login"), 3000);
           }
         } else {
           // Implicit flow - check for tokens in hash or localStorage
           console.log("Handling implicit flow");
-          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          const {
+            data: { session },
+            error: sessionError,
+          } = await runWithTimeout(supabase.auth.getSession(), 5000, "Session retrieval");
 
           if (sessionError) {
             console.error("Session error:", sessionError);
             setError(sessionError.message || "Failed to retrieve session");
-            setTimeout(() => router.push("/login"), 3000);
+            setTimeout(() => router.replace("/login"), 3000);
             return;
           }
 
           if (!session) {
             setError("No session found. Please try logging in again.");
-            setTimeout(() => router.push("/login"), 3000);
+            setTimeout(() => router.replace("/login"), 3000);
             return;
           }
 
-          const { access_token, refresh_token, expires_at } = session;
-
-          // Verify token with backend
           try {
-            const userData = await verifyToken(access_token);
-            
-            const user = {
-              id: userData.user_id,
-              email: userData.email,
-              created_at: new Date().toISOString(),
-              email_confirmed: true,
-            };
-
-            // Store auth data
-            setAuth(access_token, refresh_token, expires_at || 0, user);
-            
-            // Redirect to dashboard
-            router.push("/dashboard");
+            await verifyAndPersistSession(session);
           } catch (verifyError) {
             console.error("Token verification failed:", verifyError);
             setError("Failed to verify authentication with server");
-            setTimeout(() => router.push("/login"), 3000);
+            setTimeout(() => router.replace("/login"), 3000);
           }
         }
       } catch (err) {
         console.error("Auth callback error:", err);
         setError(err instanceof Error ? err.message : "An unexpected error occurred");
-        setTimeout(() => router.push("/login"), 3000);
+        setTimeout(() => router.replace("/login"), 3000);
+      } finally {
+        clearTimeout(watchdog);
       }
     };
 
@@ -135,13 +200,7 @@ export default function AuthCallbackPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md bg-card rounded-lg p-8 text-center">
         <div className="inline-flex items-center justify-center mb-4">
-          <Image 
-            src="/Login-Head.png" 
-            alt="My Jarvis Gua Logo" 
-            width={64} 
-            height={64} 
-            className="rounded-xl" 
-          />
+          <Image src="/Login-Head.png" alt="My Jarvis Gua Logo" width={64} height={64} className="rounded-xl" />
         </div>
 
         {error ? (

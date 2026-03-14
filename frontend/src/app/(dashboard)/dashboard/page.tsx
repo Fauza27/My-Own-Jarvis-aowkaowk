@@ -6,13 +6,11 @@ import { logout } from "@/features/auth/api/authApi";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, accessToken, clearAuth } = useAuthStore();
+  const { user, clearAuth } = useAuthStore();
 
   const handleLogout = async () => {
     try {
-      if (accessToken) {
-        await logout(accessToken);
-      }
+      await logout();
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
@@ -38,10 +36,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <button
-        onClick={handleLogout}
-        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-      >
+      <button onClick={handleLogout} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
         Logout
       </button>
     </div>
