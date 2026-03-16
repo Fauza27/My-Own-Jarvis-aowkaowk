@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function RegisterPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -12,21 +13,17 @@ export default function RegisterPage() {
   const handleGoogleRegister = async () => {
     try {
       setIsGoogleLoading(true);
-      // Use Supabase client directly to initiate OAuth
-      // This ensures code_verifier is created and stored in localStorage
-      const { supabase } = await import("@/lib/supabase");
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider: "google",
         options: {
           redirectTo: `${window.location.origin}/callback`,
         },
       });
-      
+
       if (error) {
         console.error("OAuth error:", error);
         setIsGoogleLoading(false);
       }
-      // If successful, user will be redirected to Google
     } catch (error) {
       console.error("Failed to initiate Google OAuth:", error);
       setIsGoogleLoading(false);
@@ -46,14 +43,7 @@ export default function RegisterPage() {
 
             {/* Image */}
             <div className="relative">
-              <Image 
-                src="/Login-FullBody.png" 
-                alt="My Jarvis Gua - AI Assistant Illustration" 
-                width={400} 
-                height={400} 
-                className="mx-auto" 
-                priority 
-              />
+              <Image src="/Login-FullBody.png" alt="My Jarvis Gua - AI Assistant Illustration" width={400} height={400} className="mx-auto" priority />
             </div>
           </div>
         </aside>

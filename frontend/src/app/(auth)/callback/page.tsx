@@ -1,200 +1,132 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/features/auth/store";
 import { Loader2, AlertCircle } from "lucide-react";
 import Image from "next/image";
-import { verifyToken } from "@/features/auth/api/authApi";
+import { supabase } from "@/lib/supabase";
+
+const AUTH_TIMEOUT_MS = 15000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMessage: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error(timeoutMessage));
+    }, AUTH_TIMEOUT_MS);
+
+    promise
+      .then((value) => {
+        clearTimeout(timeoutId);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
+}
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [error, setError] = useState<string | null>(null);
-  const hasHandledCallbackRef = useRef(false);
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
+    if (hasProcessed.current) {
+      return;
+    }
+    hasProcessed.current = true;
+
+    let isMounted = true;
+
+    const failAuth = (message: string) => {
+      if (!isMounted) return;
+      setError(message);
+      setTimeout(() => {
+        if (isMounted) {
+          router.replace("/login");
+        }
+      }, 3000);
+    };
+
     const handleCallback = async () => {
-      if (hasHandledCallbackRef.current) {
-        return;
-      }
-      hasHandledCallbackRef.current = true;
-
-      const runWithTimeout = async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
-        return Promise.race([
-          promise,
-          new Promise<T>((_, reject) => {
-            setTimeout(() => reject(new Error(`${label} timeout`)), ms);
-          }),
-        ]);
-      };
-
-      const getJwtExpiry = (token: string): number | null => {
-        try {
-          const payloadSegment = token.split(".")[1];
-          if (!payloadSegment) {
-            return null;
-          }
-
-          const base64 = payloadSegment.replace(/-/g, "+").replace(/_/g, "/");
-          const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
-          const payload = JSON.parse(window.atob(padded));
-
-          return typeof payload.exp === "number" ? payload.exp : null;
-        } catch {
-          return null;
-        }
-      };
-
-      const watchdog = setTimeout(() => {
-        setError("Authentication is taking too long. Please try again.");
-        setTimeout(() => router.replace("/login"), 2000);
-      }, 12000);
-
       try {
-        // Check for errors in URL
-        const errorParam = searchParams.get("error");
-        const errorDescription = searchParams.get("error_description");
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const hashError = hashParams.get("error");
-        const hashErrorDescription = hashParams.get("error_description");
-
-        if (errorParam || hashError) {
-          setError(errorDescription || hashErrorDescription || "Authentication failed");
-          setTimeout(() => router.replace("/login"), 3000);
-          return;
-        }
-
-        // Import Supabase client dynamically
-        const { supabase } = await import("@/lib/supabase");
-
-        const getSessionFromHash = () => {
-          const accessToken = hashParams.get("access_token");
-          const refreshToken = hashParams.get("refresh_token");
-          const expiresAtRaw = hashParams.get("expires_at");
-          const expiresAt = expiresAtRaw ? Number(expiresAtRaw) : null;
-
-          if (!accessToken || !refreshToken) {
-            return null;
+        const persistSession = (session: NonNullable<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]>) => {
+          if (!session.expires_at) {
+            failAuth("Authentication session is invalid. Please sign in again.");
+            return false;
           }
 
-          return {
-            access_token: accessToken,
-            refresh_token: refreshToken,
-            expires_at: Number.isFinite(expiresAt) ? expiresAt : null,
-          };
+          setAuth(session.access_token, session.refresh_token ?? "", session.expires_at, {
+            id: session.user.id,
+            email: session.user.email ?? "",
+            created_at: session.user.created_at,
+            email_confirmed: session.user.email_confirmed_at != null,
+          });
+
+          if (isMounted) {
+            router.replace("/dashboard");
+          }
+
+          return true;
         };
 
-        const verifyAndPersistSession = async (session: { access_token: string; refresh_token: string; expires_at?: number | null }) => {
-          const { access_token, refresh_token, expires_at } = session;
-          const userData = await runWithTimeout(verifyToken(access_token), 8000, "Token verification");
-          const resolvedExpiresAt = typeof expires_at === "number" ? expires_at : getJwtExpiry(access_token);
-
-          if (!resolvedExpiresAt) {
-            throw new Error("Session expiration is missing or invalid");
-          }
-
-          const user = {
-            id: userData.user_id,
-            email: userData.email,
-            created_at: new Date().toISOString(),
-            email_confirmed: true,
-          };
-
-          setAuth(access_token, refresh_token, resolvedExpiresAt, user);
-          router.replace("/dashboard");
-        };
-
-        const hashSession = getSessionFromHash();
-        if (hashSession) {
-          console.log("Handling implicit flow from URL hash tokens");
-
-          // Clean sensitive fragments first to avoid racing with router navigation
-          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-
-          void supabase.auth
-            .setSession({
-              access_token: hashSession.access_token,
-              refresh_token: hashSession.refresh_token,
-            })
-            .catch((setSessionError) => {
-              console.warn("Failed to sync Supabase session from hash:", setSessionError);
-            });
-
-          await verifyAndPersistSession(hashSession);
-          return;
-        }
-
-        // Check if we have a code parameter (PKCE flow from OAuth)
-        const code = searchParams.get("code");
-
-        if (code) {
-          // PKCE flow - exchange code for session
-          // code_verifier should be in localStorage (created when OAuth was initiated)
-          console.log("Handling PKCE flow with code");
-          const { data, error: exchangeError } = await runWithTimeout(supabase.auth.exchangeCodeForSession(code), 8000, "Code exchange");
-
-          if (exchangeError) {
-            console.error("Code exchange error:", exchangeError);
-            setError(exchangeError.message || "Failed to complete authentication");
-            setTimeout(() => router.replace("/login"), 3000);
-            return;
-          }
-
-          if (!data.session) {
-            setError("No session received after code exchange");
-            setTimeout(() => router.replace("/login"), 3000);
-            return;
-          }
-
-          try {
-            await verifyAndPersistSession(data.session);
-          } catch (verifyError) {
-            console.error("Token verification failed:", verifyError);
-            setError("Failed to verify authentication with server");
-            setTimeout(() => router.replace("/login"), 3000);
-          }
-        } else {
-          // Implicit flow - check for tokens in hash or localStorage
-          console.log("Handling implicit flow");
-          const {
-            data: { session },
-            error: sessionError,
-          } = await runWithTimeout(supabase.auth.getSession(), 5000, "Session retrieval");
+        const readCurrentSession = async () => {
+          const { data, error: sessionError } = await withTimeout(supabase.auth.getSession(), "Authentication timeout. Please try signing in again.");
 
           if (sessionError) {
-            console.error("Session error:", sessionError);
-            setError(sessionError.message || "Failed to retrieve session");
-            setTimeout(() => router.replace("/login"), 3000);
-            return;
+            throw sessionError;
           }
 
-          if (!session) {
-            setError("No session found. Please try logging in again.");
-            setTimeout(() => router.replace("/login"), 3000);
-            return;
-          }
+          return data.session;
+        };
 
-          try {
-            await verifyAndPersistSession(session);
-          } catch (verifyError) {
-            console.error("Token verification failed:", verifyError);
-            setError("Failed to verify authentication with server");
-            setTimeout(() => router.replace("/login"), 3000);
-          }
+        const searchParams = new URLSearchParams(window.location.search);
+        const authError = searchParams.get("error_description") ?? searchParams.get("error");
+
+        if (authError) {
+          failAuth(`Authentication failed: ${authError}`);
+          return;
         }
+
+        const code = searchParams.get("code");
+
+        const existingSession = await readCurrentSession();
+        if (existingSession && persistSession(existingSession)) {
+          return;
+        }
+
+        if (!code) {
+          failAuth("Authentication code is missing. Please try signing in again.");
+          return;
+        }
+
+        const { data, error: exchangeError } = await withTimeout(supabase.auth.exchangeCodeForSession(code), "Authentication timeout. Please try signing in again.");
+
+        if (exchangeError || !data.session) {
+          const recoveredSession = await readCurrentSession();
+          if (recoveredSession && persistSession(recoveredSession)) {
+            return;
+          }
+
+          failAuth(exchangeError?.message ?? "Unable to complete authentication.");
+          return;
+        }
+
+        persistSession(data.session);
       } catch (err) {
-        console.error("Auth callback error:", err);
-        setError(err instanceof Error ? err.message : "An unexpected error occurred");
-        setTimeout(() => router.replace("/login"), 3000);
-      } finally {
-        clearTimeout(watchdog);
+        failAuth(err instanceof Error ? err.message : "Unexpected authentication error. Please try again.");
       }
     };
 
-    handleCallback();
-  }, [router, setAuth, searchParams]);
+    void handleCallback();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router, setAuth]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
