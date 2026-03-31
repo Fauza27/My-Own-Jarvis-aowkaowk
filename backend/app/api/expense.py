@@ -85,12 +85,26 @@ async def get_all_expenses(
     expense_service: ExpenseService = Depends(get_expense_service),
     limit: int = 100,
     offset: int = 0,
+    expense_type: str | None = Query(None, alias="type", pattern="^(income|expense)$"),
+    category: str | None = Query(None),
+    q: str | None = Query(None),
+    date_from: str | None = Query(None, pattern="^\d{4}-\d{2}-\d{2}$"),
+    date_to: str | None = Query(None, pattern="^\d{4}-\d{2}-\d{2}$"),
+    sort_by: str = Query("created_at", pattern="^(created_at|transaction_date|amount)$"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
 ) -> ExpensesListOut:
     """Get all active expenses for the current user with pagination."""
     return expense_service.get_all_expenses(
         user_id=current_user.id,
         limit=limit,
         offset=offset,
+        expense_type=expense_type,
+        category=category,
+        q=q,
+        date_from=date_from,
+        date_to=date_to,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
 
 
