@@ -33,6 +33,40 @@ class ExpenseRepository:
     def __init__(self, client: Client):
         self._client = client
 
+    def _apply_list_filters(
+        self,
+        query,
+        user_id: str,
+        expense_type: str | None = None,
+        category: str | None = None,
+        q: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+    ):
+        """Apply common filters for expense list and count queries."""
+        query = query.eq("user_id", user_id)
+
+        if expense_type:
+            query = query.eq("type", expense_type)
+
+        if category:
+            query = query.ilike("category", f"%{category.strip().lower()}%")
+
+        if q:
+            keyword = q.strip().lower().replace(",", " ")
+            if keyword:
+                query = query.or_(
+                    f"description.ilike.%{keyword}%,category.ilike.%{keyword}%,subcategory.ilike.%{keyword}%"
+                )
+
+        if date_from:
+            query = query.gte("transaction_date", date_from)
+
+        if date_to:
+            query = query.lte("transaction_date", date_to)
+
+        return query
+
     # =========================================================================
     # READ
     # =========================================================================
@@ -42,6 +76,13 @@ class ExpenseRepository:
         user_id: str,
         limit: int = 100,
         offset: int = 0,
+        expense_type: str | None = None,
+        category: str | None = None,
+        q: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
     ) -> list[dict]:
         """
         Find all active expenses for a user with pagination.
@@ -54,17 +95,58 @@ class ExpenseRepository:
         Returns:
             List of expense dicts ordered by created_at descending.
         """
-        response = (
-            self._client
-            .table(self.VIEW)  # soft-delete filtered
-            .select("*")
-            .eq("user_id", user_id)
-            .order("created_at", desc=True)
-            .limit(limit)
-            .offset(offset)
-            .execute()
+        query = self._client.table(self.VIEW).select("*")
+        query = self._apply_list_filters(
+            query,
+            user_id=user_id,
+            expense_type=expense_type,
+            category=category,
+            q=q,
+            date_from=date_from,
+            date_to=date_to,
         )
+
+        allowed_sort_columns = {
+            "created_at": "created_at",
+            "transaction_date": "transaction_date",
+            "amount": "amount",
+        }
+        order_column = allowed_sort_columns.get(sort_by, "created_at")
+        is_desc = sort_order != "asc"
+
+        response = query.order(order_column, desc=is_desc).limit(limit).offset(offset).execute()
         return response.data
+
+    def count_all(
+        self,
+        user_id: str,
+        expense_type: str | None = None,
+        category: str | None = None,
+        q: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+    ) -> int:
+        """
+        Count all active expenses for a user.
+
+        Args:
+            user_id: The authenticated user's ID.
+
+        Returns:
+            Total number of active expense records for the user.
+        """
+        query = self._client.table(self.VIEW).select("id", count="exact", head=True)
+        query = self._apply_list_filters(
+            query,
+            user_id=user_id,
+            expense_type=expense_type,
+            category=category,
+            q=q,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        response = query.execute()
+        return int(response.count or 0)
 
     def find_by_id(self, expense_id: str, user_id: str) -> dict:
         """
@@ -90,7 +172,7 @@ class ExpenseRepository:
                 .maybe_single()
                 .execute()
             )
-            if not response.data:
+            if response is None or not getattr(response, "data", None):
                 raise NotFoundError(f"Expense with id '{expense_id}' not found")
             return response.data
         except NotFoundError:
@@ -147,6 +229,7 @@ class ExpenseRepository:
             .update(update_data)
             .eq("id", expense_id)
             .eq("user_id", user_id)
+            .is_("deleted_at", "null")
             .execute()
         )
         if not response.data:
@@ -170,20 +253,21 @@ class ExpenseRepository:
         # Verify existence first — raises NotFoundError if not found
         self.find_by_id(expense_id, user_id)
 
-        # Perform soft delete via DB function (handles auth check internally)
-        self._client.rpc(
-            "soft_delete_expense",
-            {"expense_id": expense_id}
-        ).execute()
+        from datetime import datetime, timezone
+        now_str = datetime.now(timezone.utc).isoformat()
 
-        # Confirm it is now soft-deleted (catches race conditions)
-        try:
-            self.find_by_id(expense_id, user_id)
-            # If still found in VIEW, soft delete did not apply
+        response = (
+            self._client
+            .table(self.TABLE)
+            .update({"deleted_at": now_str})
+            .eq("id", expense_id)
+            .eq("user_id", user_id)
+            .is_("deleted_at", "null")
+            .execute()
+        )
+
+        if not response.data:
             raise RuntimeError(f"Soft delete failed for expense '{expense_id}'")
-        except NotFoundError:
-            # Expected — record is no longer visible in active_expenses view
-            return
 
     # =========================================================================
     # SUMMARY
