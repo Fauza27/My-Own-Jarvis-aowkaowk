@@ -72,3 +72,8 @@ class GenerateConnectCodeResponse(BaseModel):
     def formatted_instructions(self) -> str:
         """Return instructions with the actual code."""
         return f"open telegram and type:\n/connect {self.code}"
+
+
+class ConnectWithCodeRequest(BaseModel):
+    """Payload for verifying one-time Telegram connect code."""
+    code: str
