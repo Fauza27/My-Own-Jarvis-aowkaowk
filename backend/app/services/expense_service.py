@@ -20,11 +20,37 @@ class ExpenseService:
         user_id: str,
         limit: int = 100,
         offset: int = 0,
+        expense_type: str | None = None,
+        category: str | None = None,
+        q: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
     ) -> ExpensesListOut:
         """Get all active expenses for a user with pagination."""
-        expenses_data = self._expense_repo.find_all(user_id, limit=limit, offset=offset)
+        expenses_data = self._expense_repo.find_all(
+            user_id,
+            limit=limit,
+            offset=offset,
+            expense_type=expense_type,
+            category=category,
+            q=q,
+            date_from=date_from,
+            date_to=date_to,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
+        total = self._expense_repo.count_all(
+            user_id,
+            expense_type=expense_type,
+            category=category,
+            q=q,
+            date_from=date_from,
+            date_to=date_to,
+        )
         expenses = [ExpenseOut.from_db(data) for data in expenses_data]
-        return ExpensesListOut(expenses=expenses, total=len(expenses))
+        return ExpensesListOut(expenses=expenses, total=total)
 
     def get_expense_by_id(self, user_id: str, expense_id: str) -> ExpenseOut:
         """Get a single active expense by its ID."""
@@ -41,8 +67,11 @@ class ExpenseService:
             "category":         request.category,
             "subcategory":      request.subcategory,
             "payment_method":   request.payment_method,
-            "transaction_date": request.transaction_date,
         }
+
+        if request.transaction_date is not None:
+            expense_data["transaction_date"] = request.transaction_date
+
         created_expense = self._expense_repo.create(expense_data)
         return ExpenseOut.from_db(created_expense)
 
