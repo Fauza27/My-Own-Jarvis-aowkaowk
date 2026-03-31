@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from supabase import Client
  
 from app.core.dependencies import CurrentUser, AccessToken
-from app.infrastructure.supabase_client import get_user_client, get_admin_client
+from app.infrastructure.supabase_client import get_user_client, get_admin_supabase_client
 from app.repositories.profile_repository import ProfileRepository
 from app.services.profile_service import ProfileService
 from app.models.profile import (
@@ -21,7 +21,7 @@ def get_profile_service_for_user(token: AccessToken) -> ProfileService:
 
 def get_profile_service_for_admin() -> ProfileService:
     """Profile service with admin client (bypass RLS)"""
-    admin_client = get_admin_client()
+    admin_client = get_admin_supabase_client()
     repo = ProfileRepository(client=admin_client)
     return ProfileService(profile_repo=repo)
 
