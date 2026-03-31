@@ -36,7 +36,7 @@ class UnauthorizedError(AppError):
     """Raised when user is not authorized (401)."""
     pass
 
-class TelehgramNotLinkedError(AppError):
+class TelegramNotLinkedError(AppError):
     """Raised when user tries to access Telegram features but hasn't linked their account."""
     pass
 
