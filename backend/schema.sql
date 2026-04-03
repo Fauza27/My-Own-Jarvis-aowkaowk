@@ -104,6 +104,58 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+CREATE EXTENSION IF NOT EXISTS vector;
+
+ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS embedding vector(1536);
+
+CREATE INDEX IF NOT EXISTS idx_expenses_embedding 
+    ON public.expenses USING hnsw (embedding vector_cosine_ops);
+
+CREATE OR REPLACE FUNCTION match_expense(
+  query_embedding   vector(1536),
+  user_id_param     uuid,
+  match_threshold   float DEFAULT 0.5,
+  match_count       int   DEFAULT 5
+)
+RETURNS TABLE (
+  id               uuid,
+  user_id          uuid,
+  amount           numeric(15, 2),
+  type             varchar(10),
+  description      text,
+  category         varchar(50),
+  subcategory      varchar(50),
+  payment_method   varchar(50),
+  transaction_date date,
+  created_at       timestamptz,
+  updated_at       timestamptz,
+  similarity       float
+)
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT
+    t.id,
+    t.user_id,
+    t.amount,
+    t.type,
+    t.description,
+    t.category,
+    t.subcategory,
+    t.payment_method,
+    t.transaction_date,
+    t.created_at,
+    t.updated_at,
+    1 - (t.embedding <=> query_embedding) AS similarity
+  FROM public.expenses t
+  WHERE t.user_id = user_id_param
+    AND t.embedding IS NOT NULL
+    AND t.deleted_at IS NULL
+    AND 1 - (t.embedding <=> query_embedding) > match_threshold
+  ORDER BY
+    t.embedding <=> query_embedding
+  LIMIT match_count;
+$$;
 -- ======================================================================
 -- ========================================================================
 -- ======================================================================
