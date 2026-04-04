@@ -182,7 +182,7 @@ class AIService:
                         "content": json.dumps(result, ensure_ascii=False),
                     })
 
-                    continue
+                continue  # ← Continue the OUTER loop to send tool results back to OpenAI
 
             logger.warning(f"Unexpected finish reason: {finish_reason}")
             break
