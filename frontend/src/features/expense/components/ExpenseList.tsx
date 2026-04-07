@@ -28,19 +28,27 @@ type ExpenseListProps = {
 
 function ExpenseRow({ item, onDelete, onEdit, isDeleting }: { item: Expense; onDelete: (id: string) => void; onEdit: (item: Expense) => void; isDeleting: boolean }) {
   return (
-    <tr className="border-b border-gray-100">
-      <td className="px-4 py-3 text-sm text-gray-900">{item.transaction_date || "-"}</td>
-      <td className="px-4 py-3 text-sm text-gray-900 capitalize">{item.type}</td>
-      <td className="px-4 py-3 text-sm text-gray-900">{item.category}</td>
-      <td className="px-4 py-3 text-sm text-gray-700">{item.description || "-"}</td>
-      <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">{currencyFormatter.format(item.amount)}</td>
+    <tr className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+      <td className="px-4 py-3 text-sm text-foreground">{item.transaction_date || "-"}</td>
+      <td className="px-4 py-3 text-sm">
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
+          item.type === "income"
+            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+            : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+        }`}>
+          {item.type}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-sm text-foreground">{item.category}</td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">{item.description || "-"}</td>
+      <td className="px-4 py-3 text-sm font-medium text-foreground text-right">{currencyFormatter.format(item.amount)}</td>
       <td className="px-4 py-3 text-right">
-        <div className="inline-flex items-center gap-2">
-          <button type="button" onClick={() => onEdit(item)} className="inline-flex items-center gap-1 rounded-md border border-blue-200 px-2 py-1 text-xs text-blue-700 hover:bg-blue-50">
+        <div className="inline-flex items-center gap-1.5">
+          <button type="button" onClick={() => onEdit(item)} className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
             <Pencil className="w-3.5 h-3.5" />
             Edit
           </button>
-          <button type="button" onClick={() => onDelete(item.id)} disabled={isDeleting} className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs text-red-700 hover:bg-red-50 disabled:opacity-60">
+          <button type="button" onClick={() => onDelete(item.id)} disabled={isDeleting} className="inline-flex items-center gap-1 rounded-lg border border-destructive/20 px-2 py-1 text-xs text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-60">
             <Trash2 className="w-3.5 h-3.5" />
             Hapus
           </button>
@@ -126,29 +134,29 @@ export function ExpenseList({
 
   if (expensesQuery.isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <p className="text-sm text-gray-600">Memuat data transaksi...</p>
+      <div className="bg-card rounded-2xl border border-border p-6">
+        <p className="text-sm text-muted-foreground">Memuat data transaksi...</p>
       </div>
     );
   }
 
   if (expensesQuery.isError) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-red-200 p-6">
-        <p className="text-sm text-red-700">{expensesQuery.error instanceof Error ? expensesQuery.error.message : "Gagal memuat transaksi"}</p>
+      <div className="bg-card rounded-2xl border border-destructive/30 p-6">
+        <p className="text-sm text-destructive">{expensesQuery.error instanceof Error ? expensesQuery.error.message : "Gagal memuat transaksi"}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="bg-card rounded-2xl border border-border p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">Daftar Transaksi</h2>
-        <p className="text-sm text-gray-600">{pageInfo}</p>
+        <h2 className="text-base font-semibold text-card-foreground">Daftar Transaksi</h2>
+        <p className="text-sm text-muted-foreground">{pageInfo}</p>
       </div>
 
       {deleteExpenseMutation.isError && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{deleteExpenseMutation.error instanceof Error ? deleteExpenseMutation.error.message : "Gagal menghapus transaksi"}</div>
+        <div className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">{deleteExpenseMutation.error instanceof Error ? deleteExpenseMutation.error.message : "Gagal menghapus transaksi"}</div>
       )}
 
       {editingExpense && (
@@ -158,19 +166,19 @@ export function ExpenseList({
       )}
 
       {items.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-600">Belum ada transaksi yang cocok dengan filter saat ini.</div>
+        <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">Belum ada transaksi yang cocok dengan filter saat ini.</div>
       ) : (
         <div className="space-y-4">
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead>
-                <tr className="border-b border-gray-200 text-left">
-                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">Tanggal</th>
-                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">Tipe</th>
-                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">Kategori</th>
-                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">Deskripsi</th>
-                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600 text-right">Jumlah</th>
-                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600 text-right">Aksi</th>
+                <tr className="border-b border-border text-left">
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tanggal</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tipe</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kategori</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Deskripsi</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground text-right">Jumlah</th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -181,8 +189,9 @@ export function ExpenseList({
             </table>
           </div>
 
+          {/* Pagination */}
           <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Halaman {currentPage} dari {totalPages}
               {expensesQuery.isFetching ? " (memperbarui...)" : ""}
             </p>
@@ -191,7 +200,7 @@ export function ExpenseList({
                 type="button"
                 onClick={() => setPage(Math.max(1, currentPage - 1))}
                 disabled={!canGoPrev || expensesQuery.isFetching}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
               >
                 Sebelumnya
               </button>
@@ -199,7 +208,7 @@ export function ExpenseList({
                 type="button"
                 onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
                 disabled={!canGoNext || expensesQuery.isFetching}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
               >
                 Berikutnya
               </button>

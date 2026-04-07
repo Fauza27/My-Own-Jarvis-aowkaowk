@@ -63,11 +63,13 @@ export function ExpenseEditForm({ expense, onCancel, onSuccess }: ExpenseEditFor
 
   const isLoading = isSubmitting || updateExpenseMutation.isPending;
 
+  const inputClass = "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors";
+
   return (
-    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+    <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-blue-900">Edit Transaksi</h3>
-        <button type="button" onClick={onCancel} className="inline-flex items-center gap-1 text-xs text-blue-700 hover:text-blue-900">
+        <h3 className="text-sm font-semibold text-foreground">Edit Transaksi</h3>
+        <button type="button" onClick={onCancel} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
           <X className="w-3.5 h-3.5" />
           Tutup
         </button>
@@ -75,60 +77,70 @@ export function ExpenseEditForm({ expense, onCancel, onSuccess }: ExpenseEditFor
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Jumlah</label>
-          <input type="number" step="0.01" {...register("amount", { valueAsNumber: true })} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          {errors.amount && <p className="text-xs text-red-600 mt-1">{errors.amount.message}</p>}
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Jumlah</label>
+          <input type="number" step="0.01" {...register("amount", { valueAsNumber: true })} className={inputClass} />
+          {errors.amount && <p className="text-xs text-destructive mt-1">{errors.amount.message}</p>}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Tipe</label>
-          <select {...register("type")} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Tipe</label>
+          <select {...register("type")} className={inputClass}>
             <option value="expense">Expense</option>
             <option value="income">Income</option>
           </select>
-          {errors.type && <p className="text-xs text-red-600 mt-1">{errors.type.message}</p>}
+          {errors.type && <p className="text-xs text-destructive mt-1">{errors.type.message}</p>}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Kategori</label>
-          <input type="text" {...register("category")} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          {errors.category && <p className="text-xs text-red-600 mt-1">{errors.category.message}</p>}
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Kategori</label>
+          <input type="text" {...register("category")} className={inputClass} />
+          {errors.category && <p className="text-xs text-destructive mt-1">{errors.category.message}</p>}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Subkategori</label>
-          <input type="text" {...register("subcategory")} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          {errors.subcategory && <p className="text-xs text-red-600 mt-1">{errors.subcategory.message}</p>}
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Subkategori</label>
+          <input type="text" {...register("subcategory")} className={inputClass} />
+          {errors.subcategory && <p className="text-xs text-destructive mt-1">{errors.subcategory.message}</p>}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Metode Pembayaran</label>
-          <input type="text" {...register("payment_method")} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          {errors.payment_method && <p className="text-xs text-red-600 mt-1">{errors.payment_method.message}</p>}
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Metode Pembayaran</label>
+          <input type="text" {...register("payment_method")} className={inputClass} />
+          {errors.payment_method && <p className="text-xs text-destructive mt-1">{errors.payment_method.message}</p>}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Tanggal Transaksi</label>
-          <input type="date" {...register("transaction_date")} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          {errors.transaction_date && <p className="text-xs text-red-600 mt-1">{errors.transaction_date.message}</p>}
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Tanggal Transaksi</label>
+          <input type="date" {...register("transaction_date")} className={inputClass} />
+          {errors.transaction_date && <p className="text-xs text-destructive mt-1">{errors.transaction_date.message}</p>}
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-xs font-medium text-gray-700 mb-1">Deskripsi</label>
-          <textarea rows={2} {...register("description")} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          {errors.description && <p className="text-xs text-red-600 mt-1">{errors.description.message}</p>}
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Deskripsi</label>
+          <textarea rows={2} {...register("description")} className={inputClass} />
+          {errors.description && <p className="text-xs text-destructive mt-1">{errors.description.message}</p>}
         </div>
 
         {updateExpenseMutation.isError && (
-          <div className="md:col-span-2 rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-700">{updateExpenseMutation.error instanceof Error ? updateExpenseMutation.error.message : "Gagal memperbarui transaksi"}</div>
+          <div className="md:col-span-2 rounded-xl border border-destructive/20 bg-destructive/10 p-2 text-xs text-destructive">{updateExpenseMutation.error instanceof Error ? updateExpenseMutation.error.message : "Gagal memperbarui transaksi"}</div>
         )}
 
         <div className="md:col-span-2 flex items-center gap-2">
-          <button type="submit" disabled={isLoading} className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="
+              inline-flex items-center gap-2 rounded-xl
+              bg-primary text-primary-foreground
+              px-3 py-2 text-xs font-medium
+              hover:bg-primary/90 active:bg-primary/80
+              transition-colors disabled:opacity-60
+            "
+          >
             {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             {isLoading ? "Menyimpan..." : "Simpan Perubahan"}
           </button>
-          <button type="button" onClick={onCancel} className="rounded-md border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">
+          <button type="button" onClick={onCancel} className="rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
             Batal
           </button>
         </div>

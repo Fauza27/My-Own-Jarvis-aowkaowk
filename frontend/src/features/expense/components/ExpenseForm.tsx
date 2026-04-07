@@ -10,9 +10,11 @@ import { useCreateExpense } from "../hooks";
 
 type ExpenseFormProps = {
   onSuccess?: () => void;
+  /** When true, renders without the card wrapper/heading (for use inside modals) */
+  compact?: boolean;
 };
 
-export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
+export function ExpenseForm({ onSuccess, compact = false }: ExpenseFormProps) {
   const createExpenseMutation = useCreateExpense();
 
   const formatRupiah = (value: number) => {
@@ -79,15 +81,17 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
 
   const isLoading = isSubmitting || createExpenseMutation.isPending;
 
+  const inputClass = "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors";
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">Tambah Transaksi</h2>
+    <div className={compact ? "" : "bg-card rounded-2xl border border-border p-6"}>
+      {!compact && <h2 className="text-base font-semibold text-card-foreground mb-4">Tambah Transaksi</h2>}
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah</label>
-          <div className="flex rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500">
-            <span className="inline-flex items-center px-3 text-sm text-gray-600 bg-gray-50 border-r border-gray-300">Rp</span>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Jumlah</label>
+          <div className="flex rounded-lg border border-input focus-within:ring-2 focus-within:ring-ring overflow-hidden">
+            <span className="inline-flex items-center px-3 text-sm text-muted-foreground bg-muted border-r border-input">Rp</span>
             <input
               type="text"
               inputMode="numeric"
@@ -97,63 +101,74 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
                 setValue("amount", numericValue, { shouldValidate: true, shouldDirty: true });
               }}
               placeholder="0"
-              className="w-full px-3 py-2 text-sm focus:outline-none"
+              className="w-full px-3 py-2 text-sm bg-background text-foreground focus:outline-none"
             />
           </div>
-          {errors.amount && <p className="text-xs text-red-600 mt-1">{errors.amount.message}</p>}
+          {errors.amount && <p className="text-xs text-destructive mt-1">{errors.amount.message}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tipe</label>
-          <select {...register("type")} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Tipe</label>
+          <select {...register("type")} className={inputClass}>
             <option value="expense">Expense</option>
             <option value="income">Income</option>
           </select>
-          {errors.type && <p className="text-xs text-red-600 mt-1">{errors.type.message}</p>}
+          {errors.type && <p className="text-xs text-destructive mt-1">{errors.type.message}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-          <input type="text" placeholder="contoh: food" {...register("category")} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          {errors.category && <p className="text-xs text-red-600 mt-1">{errors.category.message}</p>}
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Kategori</label>
+          <input type="text" placeholder="contoh: food" {...register("category")} className={inputClass} />
+          {errors.category && <p className="text-xs text-destructive mt-1">{errors.category.message}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Subkategori</label>
-          <input type="text" placeholder="opsional" {...register("subcategory")} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          {errors.subcategory && <p className="text-xs text-red-600 mt-1">{errors.subcategory.message}</p>}
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Subkategori</label>
+          <input type="text" placeholder="opsional" {...register("subcategory")} className={inputClass} />
+          {errors.subcategory && <p className="text-xs text-destructive mt-1">{errors.subcategory.message}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Metode Pembayaran</label>
-          <input type="text" placeholder="opsional" {...register("payment_method")} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          {errors.payment_method && <p className="text-xs text-red-600 mt-1">{errors.payment_method.message}</p>}
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Metode Pembayaran</label>
+          <input type="text" placeholder="opsional" {...register("payment_method")} className={inputClass} />
+          {errors.payment_method && <p className="text-xs text-destructive mt-1">{errors.payment_method.message}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Transaksi</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Tanggal Transaksi</label>
           <input
             type="date"
             {...register("transaction_date", {
               setValueAs: (value) => (value === "" ? undefined : value),
             })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={inputClass}
           />
-          {errors.transaction_date && <p className="text-xs text-red-600 mt-1">{errors.transaction_date.message}</p>}
+          {errors.transaction_date && <p className="text-xs text-destructive mt-1">{errors.transaction_date.message}</p>}
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
-          <textarea rows={3} placeholder="opsional" {...register("description")} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          {errors.description && <p className="text-xs text-red-600 mt-1">{errors.description.message}</p>}
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Deskripsi</label>
+          <textarea rows={3} placeholder="opsional" {...register("description")} className={inputClass} />
+          {errors.description && <p className="text-xs text-destructive mt-1">{errors.description.message}</p>}
         </div>
 
         {createExpenseMutation.isError && (
-          <div className="md:col-span-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{createExpenseMutation.error instanceof Error ? createExpenseMutation.error.message : "Gagal menambahkan transaksi"}</div>
+          <div className="md:col-span-2 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">{createExpenseMutation.error instanceof Error ? createExpenseMutation.error.message : "Gagal menambahkan transaksi"}</div>
         )}
 
         <div className="md:col-span-2">
-          <button type="submit" disabled={isLoading} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="
+              inline-flex items-center gap-2 px-4 py-2.5 rounded-xl
+              bg-primary text-primary-foreground
+              text-sm font-medium
+              hover:bg-primary/90 active:bg-primary/80
+              transition-colors duration-200
+              disabled:opacity-60 disabled:cursor-not-allowed
+            "
+          >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />}
             {isLoading ? "Menyimpan..." : "Simpan Transaksi"}
           </button>
