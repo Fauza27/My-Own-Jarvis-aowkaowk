@@ -43,7 +43,7 @@ export default function RegisterPage() {
 
             {/* Image */}
             <div className="relative">
-              <Image src="/Login-FullBody.png" alt="My Jarvis Gua - AI Assistant Illustration" width={400} height={400} className="mx-auto" priority />
+              <Image src="/Logo-register-fullBody.png" alt="My Jarvis Gua - Register Illustration" width={400} height={400} className="mx-auto" priority />
             </div>
           </div>
         </aside>
@@ -56,10 +56,10 @@ export default function RegisterPage() {
             <div className="text-center mb-8 lg:hidden">
               {/* Logo - Responsive: Head for small screens, FullBody for larger screens */}
               <div className="inline-flex items-center justify-center mb-4">
-                {/* Small screens: Login-Head.png */}
-                <Image src="/Login-Head.png" alt="My Jarvis Gua Logo" width={48} height={48} className="rounded-xl sm:hidden" priority />
-                {/* Medium screens: Login-FullBody.png */}
-                <Image src="/Login-FullBody.png" alt="My Jarvis Gua Logo" width={120} height={120} className="rounded-xl hidden sm:block" priority />
+                {/* Small screens: register mascot */}
+                <Image src="/Logo-register-fullBody.png" alt="My Jarvis Gua Register Logo" width={48} height={48} className="rounded-xl sm:hidden" priority />
+                {/* Medium screens: register mascot */}
+                <Image src="/Logo-register-fullBody.png" alt="My Jarvis Gua Register Logo" width={120} height={120} className="rounded-xl hidden sm:block" priority />
               </div>
 
               {/* Headline */}

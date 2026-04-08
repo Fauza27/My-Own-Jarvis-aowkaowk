@@ -23,10 +23,10 @@ export default function ForgotPasswordPage() {
             <div className="text-center mb-8 lg:hidden">
               {/* Logo - Responsive: Head for small screens, FullBody for larger screens */}
               <div className="inline-flex items-center justify-center mb-4">
-                {/* Small screens: Login-Head.png */}
-                <Image src="/Login-Head.png" alt="My Jarvis Gua Logo" width={48} height={48} className="rounded-xl sm:hidden" priority />
-                {/* Medium screens: Login-FullBody.png */}
-                <Image src="/Login-FullBody.png" alt="My Jarvis Gua Logo" width={120} height={120} className="rounded-xl hidden sm:block" priority />
+                {/* Small screens: forgot-password mascot */}
+                <Image src="/Logo-forgot-password-FullBody.png" alt="My Jarvis Gua Forgot Password Logo" width={48} height={48} className="rounded-xl sm:hidden" priority />
+                {/* Medium screens: forgot-password mascot */}
+                <Image src="/Logo-forgot-password-FullBody.png" alt="My Jarvis Gua Forgot Password Logo" width={120} height={120} className="rounded-xl hidden sm:block" priority />
               </div>
 
               {/* Headline */}
@@ -80,14 +80,7 @@ export default function ForgotPasswordPage() {
 
             {/* Image */}
             <div className="relative">
-              <Image 
-                src="/Login-FullBody.png" 
-                alt="My Jarvis Gua - AI Assistant Illustration" 
-                width={400} 
-                height={400} 
-                className="mx-auto" 
-                priority 
-              />
+              <Image src="/Logo-forgot-password-FullBody.png" alt="My Jarvis Gua - Forgot Password Illustration" width={400} height={400} className="mx-auto" priority />
             </div>
           </div>
         </aside>
