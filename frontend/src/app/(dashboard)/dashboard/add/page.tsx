@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Wallet, ClipboardList, Apple, Dumbbell, BookOpen, Target, ArrowLeft, X, Construction } from "lucide-react";
+import { ArrowLeft, X, Construction } from "lucide-react";
 import { ExpenseForm } from "@/features/expense/components/ExpenseForm";
 import Link from "next/link";
 import Image from "next/image";
@@ -10,8 +10,7 @@ type AddOption = {
   id: string;
   title: string;
   description: string;
-  icon?: React.ElementType;
-  iconImage?: string;
+  iconImage: string;
   available: boolean;
 };
 
@@ -27,42 +26,41 @@ const addOptions: AddOption[] = [
     id: "task",
     title: "Tugas",
     description: "Tambah to-do list atau tugas",
-    icon: ClipboardList,
+    iconImage: "/Logo-Finance-Tracker-HeadVersion(small).png",
     available: false,
   },
   {
     id: "nutrition",
     title: "Catatan Makanan",
     description: "Catat makanan & nutrisi harian",
-    icon: Apple,
+    iconImage: "/Logo-Finance-Tracker-HeadVersion(small).png",
     available: false,
   },
   {
     id: "fitness",
     title: "Aktivitas Olahraga",
     description: "Log workout & aktivitas fisik",
-    icon: Dumbbell,
+    iconImage: "/Logo-Finance-Tracker-HeadVersion(small).png",
     available: false,
   },
   {
     id: "journal",
     title: "Jurnal Harian",
     description: "Tulis catatan & refleksi harian",
-    icon: BookOpen,
+    iconImage: "/Logo-Finance-Tracker-HeadVersion(small).png",
     available: false,
   },
   {
     id: "goal",
     title: "Target / Goals",
     description: "Set target baru & milestone",
-    icon: Target,
+    iconImage: "/Logo-Finance-Tracker-HeadVersion(small).png",
     available: false,
   },
 ];
 
 // ── Coming Soon Placeholder Form ──
 function ComingSoonForm({ option, onClose }: { option: AddOption; onClose: () => void }) {
-  const Icon = option.icon;
   return (
     <div className="flex flex-col items-center text-center py-8">
       <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
@@ -110,7 +108,6 @@ export default function AddPage() {
         {/* Options Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {addOptions.map((option) => {
-            const Icon = option.icon;
             return (
               <button
                 key={option.id}
@@ -123,18 +120,8 @@ export default function AddPage() {
                 `}
               >
                 <div className="flex items-start gap-3">
-                  <div
-                    className={`
-                      w-10 h-10 rounded-xl flex items-center justify-center shrink-0
-                      transition-colors
-                      ${option.available ? "bg-primary/10 group-hover:bg-primary/15" : "bg-muted"}
-                    `}
-                  >
-                    {option.iconImage ? (
-                      <Image src={option.iconImage} alt={`${option.title} icon`} width={22} height={22} className="rounded-md object-contain" />
-                    ) : (
-                      Icon && <Icon className={`w-5 h-5 ${option.available ? "text-primary" : "text-muted-foreground"}`} />
-                    )}
+                  <div className="w-10 h-10 shrink-0">
+                    <Image src={option.iconImage} alt={`${option.title} icon`} width={40} height={40} className="object-contain" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -172,12 +159,8 @@ export default function AddPage() {
               <div className="w-10 h-1 bg-border rounded-full mx-auto mb-3 sm:hidden" />
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    {selectedOption.iconImage ? (
-                      <Image src={selectedOption.iconImage} alt={`${selectedOption.title} icon`} width={18} height={18} className="rounded-sm object-contain" />
-                    ) : (
-                      selectedOption.icon && <selectedOption.icon className="w-4 h-4 text-primary" />
-                    )}
+                  <div className="w-8 h-8 flex items-center justify-center">
+                    <Image src={selectedOption.iconImage} alt={`${selectedOption.title} icon`} width={32} height={32} className="object-contain" />
                   </div>
                   <h2 className="text-base font-semibold text-foreground">{selectedOption.title}</h2>
                 </div>

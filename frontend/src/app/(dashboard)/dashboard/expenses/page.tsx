@@ -158,8 +158,14 @@ export default function ExpensePage() {
 
   const handleResetFilters = () => {
     updateSearchParams({
-      type: null, category: null, q: null, date_from: null, date_to: null,
-      sort_by: null, sort_order: null, page: null,
+      type: null,
+      category: null,
+      q: null,
+      date_from: null,
+      date_to: null,
+      sort_by: null,
+      sort_order: null,
+      page: null,
     });
   };
 
@@ -167,11 +173,11 @@ export default function ExpensePage() {
 
   return (
     <>
-      <div className="p-4 space-y-5">
+      <div className="space-y-5 p-4 md:space-y-6 md:p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-foreground">Expense Tracker</h1>
+            <h1 className="text-xl font-bold text-foreground md:text-2xl">Expense Tracker</h1>
             <p className="text-sm text-muted-foreground mt-0.5">Kelola pemasukan dan pengeluaran kamu.</p>
           </div>
           <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors">
@@ -222,7 +228,7 @@ export default function ExpensePage() {
         {/* Filters */}
         <div className="bg-card rounded-2xl border border-border p-4">
           <h2 className="text-sm font-semibold text-foreground mb-3">Filter Transaksi</h2>
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-7">
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">Tipe</label>
               <select value={typeFilter} onChange={(e) => handleTypeFilterChange(e.target.value as any)} className={inputClass}>
@@ -233,11 +239,27 @@ export default function ExpensePage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">Kategori</label>
-              <input value={categoryInput} onChange={(e) => { handleCategoryFilterChange(e.target.value); if (e.target.value === "") handleImmediateCategoryClear(); }} placeholder="contoh: food" className={inputClass} />
+              <input
+                value={categoryInput}
+                onChange={(e) => {
+                  handleCategoryFilterChange(e.target.value);
+                  if (e.target.value === "") handleImmediateCategoryClear();
+                }}
+                placeholder="contoh: food"
+                className={inputClass}
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">Cari</label>
-              <input value={searchInput} onChange={(e) => { handleSearchQueryChange(e.target.value); if (e.target.value === "") handleImmediateSearchClear(); }} placeholder="deskripsi, kategori" className={inputClass} />
+              <input
+                value={searchInput}
+                onChange={(e) => {
+                  handleSearchQueryChange(e.target.value);
+                  if (e.target.value === "") handleImmediateSearchClear();
+                }}
+                placeholder="deskripsi, kategori"
+                className={inputClass}
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">Dari Tanggal</label>
@@ -263,7 +285,7 @@ export default function ExpensePage() {
               </select>
             </div>
           </div>
-          <div className="mt-3 flex items-center justify-between">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs text-muted-foreground">Filter berlaku ke seluruh data.</p>
               {isDateRangeInvalid && <p className="text-xs text-destructive mt-1">Rentang tanggal tidak valid.</p>}
@@ -294,7 +316,7 @@ export default function ExpensePage() {
         <button
           onClick={() => setShowForm(true)}
           className="
-            fixed z-[55] bottom-20 right-4
+            fixed bottom-20 right-4 z-55 md:bottom-8 md:right-8
             w-14 h-14 rounded-2xl
             bg-primary text-primary-foreground
             shadow-lg hover:shadow-xl
@@ -310,17 +332,14 @@ export default function ExpensePage() {
 
       {/* ── Form Overlay ── */}
       {showForm && (
-        <div
-          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
-          onClick={() => setShowForm(false)}
-        >
+        <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center" onClick={() => setShowForm(false)}>
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
           {/* Form Container */}
           <div
             className="
-              relative w-full sm:max-w-lg
+              relative w-full sm:max-w-lg lg:max-w-2xl
               bg-background border-t border-border sm:border sm:rounded-2xl
               rounded-t-3xl
               max-h-[85vh] overflow-y-auto
@@ -333,10 +352,7 @@ export default function ExpensePage() {
               <div className="w-10 h-1 bg-border rounded-full mx-auto mb-3 sm:hidden" />
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold text-foreground">Tambah Transaksi</h2>
-                <button
-                  onClick={() => setShowForm(false)}
-                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                >
+                <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>

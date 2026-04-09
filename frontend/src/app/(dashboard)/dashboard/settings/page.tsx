@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -8,8 +9,6 @@ import {
   Sun,
   Bell,
   BellOff,
-  Globe,
-  Smartphone,
   Database,
   Trash2,
   Download,
@@ -17,13 +16,13 @@ import {
   ChevronRight,
   Info,
 } from "lucide-react";
+import { exportExpensesCsv } from "@/features/expense/api/expenseApi";
+import { getStoredDarkMode, setDarkModePreference } from "@/lib/theme";
 
 // ── Dummy settings state ──
 type SettingsState = {
   darkMode: boolean;
   notifications: boolean;
-  language: "id" | "en";
-  currency: "IDR" | "USD";
   autoSync: boolean;
 };
 
@@ -112,17 +111,57 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsState>({
     darkMode: false,
     notifications: true,
-    language: "id",
-    currency: "IDR",
     autoSync: true,
   });
+
+  const [isExporting, setIsExporting] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const saved = getStoredDarkMode();
+    if (saved !== null) {
+      setSettings((prev) => ({ ...prev, darkMode: saved }));
+    }
+  }, []);
 
   const updateSetting = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleDarkModeChange = (value: boolean) => {
+    updateSetting("darkMode", value);
+    setDarkModePreference(value);
+  };
+
+  const handleExportData = async () => {
+    setActionMessage(null);
+    setIsExporting(true);
+
+    try {
+      const blob = await exportExpensesCsv();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const timestamp = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.download = `expenses_export_${timestamp}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setActionMessage("Export berhasil. File CSV sudah diunduh.");
+    } catch (error) {
+      setActionMessage(error instanceof Error ? error.message : "Gagal export data");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="p-4 space-y-5">
+      {actionMessage && (
+        <div className="rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">{actionMessage}</div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -144,38 +183,8 @@ export default function SettingsPage() {
           action={
             <Toggle
               enabled={settings.darkMode}
-              onChange={(v) => updateSetting("darkMode", v)}
+              onChange={handleDarkModeChange}
             />
-          }
-        />
-        <SettingsItem
-          icon={Globe}
-          label="Bahasa"
-          description={settings.language === "id" ? "Bahasa Indonesia" : "English"}
-          action={
-            <select
-              value={settings.language}
-              onChange={(e) => updateSetting("language", e.target.value as "id" | "en")}
-              className="text-sm bg-muted border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="id">Indonesia</option>
-              <option value="en">English</option>
-            </select>
-          }
-        />
-        <SettingsItem
-          icon={Smartphone}
-          label="Mata Uang"
-          description={settings.currency === "IDR" ? "Rupiah (IDR)" : "US Dollar (USD)"}
-          action={
-            <select
-              value={settings.currency}
-              onChange={(e) => updateSetting("currency", e.target.value as "IDR" | "USD")}
-              className="text-sm bg-muted border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="IDR">IDR</option>
-              <option value="USD">USD</option>
-            </select>
           }
         />
       </SettingsSection>
@@ -212,7 +221,8 @@ export default function SettingsPage() {
           icon={Download}
           label="Export Data"
           description="Download semua data sebagai CSV"
-          onClick={() => {}}
+          onClick={handleExportData}
+          action={isExporting ? <span className="text-xs text-muted-foreground">Exporting...</span> : undefined}
         />
         <SettingsItem
           icon={Database}
