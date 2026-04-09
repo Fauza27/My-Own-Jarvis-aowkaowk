@@ -286,3 +286,21 @@ export const getExpenseSummaryByYear = async (year: number): Promise<ExpenseSumm
 
   return res.json();
 };
+
+// GET /api/expenses/export/csv
+// Export expense user yang login sebagai file CSV.
+export const exportExpensesCsv = async (): Promise<Blob> => {
+  const headers = await getAuthHeaders(false);
+
+  const res = await fetchWithTimeout(`${BASE_URL}/api/expenses/export/csv`, {
+    method: "GET",
+    headers,
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res, "Failed to export expenses"));
+  }
+
+  return res.blob();
+};
