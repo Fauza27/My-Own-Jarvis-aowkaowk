@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, status
 from fastapi import Query   
+from fastapi.responses import Response
 
 from app.core.dependencies import CurrentUser, AccessToken
 from app.infrastructure.supabase_client import get_user_client, get_admin_supabase_client
@@ -29,6 +30,40 @@ def get_expense_service(token: AccessToken) -> ExpenseService:
     embedding_service = EmbeddingService(openai_client=openai_client, ai_repo=ai_repo)
     repo = ExpenseRepository(client=user_client)
     return ExpenseService(expense_repo=repo, embedding_service=embedding_service)
+
+@router.get(
+    "/export/csv",
+    status_code=status.HTTP_200_OK,
+    summary="Export my expenses as CSV",
+)
+async def export_expenses_csv(
+    current_user: CurrentUser,
+    expense_service: ExpenseService = Depends(get_expense_service),
+    expense_type: str | None = Query(None, alias="type", pattern="^(income|expense)$"),
+    category: str | None = Query(None),
+    q: str | None = Query(None),
+    date_from: str | None = Query(None, pattern="^\d{4}-\d{2}-\d{2}$"),
+    date_to: str | None = Query(None, pattern="^\d{4}-\d{2}-\d{2}$"),
+    sort_by: str = Query("created_at", pattern="^(created_at|transaction_date|amount)$"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
+) -> Response:
+    csv_content = expense_service.export_expenses_csv(
+        user_id=current_user.id,
+        expense_type=expense_type,
+        category=category,
+        q=q,
+        date_from=date_from,
+        date_to=date_to,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="expenses_export.csv"'},
+    )
+
 
 @router.get(
     "/summary",

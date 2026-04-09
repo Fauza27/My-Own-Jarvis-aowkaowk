@@ -1,4 +1,6 @@
 from app.core.exceptions import ValidationError
+import csv
+import io
 from app.models.expense import (
     CreateExpenseRequest,
     UpdateExpenseRequest,
@@ -177,4 +179,72 @@ class ExpenseService:
             category=category,
             subcategory=subcategory,
             payment_method=payment_method,
-        )
+        )
+
+    def export_expenses_csv(
+        self,
+        user_id: str,
+        expense_type: str | None = None,
+        category: str | None = None,
+        q: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
+    ) -> str:
+        """Export active expenses for a user as CSV text."""
+        rows: list[dict] = []
+        limit = 1000
+        offset = 0
+
+        while True:
+            batch = self._expense_repo.find_all(
+                user_id=user_id,
+                limit=limit,
+                offset=offset,
+                expense_type=expense_type,
+                category=category,
+                q=q,
+                date_from=date_from,
+                date_to=date_to,
+                sort_by=sort_by,
+                sort_order=sort_order,
+            )
+            if not batch:
+                break
+
+            rows.extend(batch)
+            if len(batch) < limit:
+                break
+            offset += limit
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "id",
+            "amount",
+            "type",
+            "category",
+            "subcategory",
+            "payment_method",
+            "description",
+            "transaction_date",
+            "created_at",
+            "updated_at",
+        ])
+
+        for item in rows:
+            writer.writerow([
+                item.get("id", ""),
+                item.get("amount", ""),
+                item.get("type", ""),
+                item.get("category", ""),
+                item.get("subcategory", ""),
+                item.get("payment_method", ""),
+                item.get("description", ""),
+                item.get("transaction_date", ""),
+                item.get("created_at", ""),
+                item.get("updated_at", ""),
+            ])
+
+        return output.getvalue()
